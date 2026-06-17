@@ -54,12 +54,13 @@ ui <- fluidPage(
       ),
       sliderInput(
         "bins6",
-        "Event yesterday ? :",
+        "Event yesterday? (waste water model only)",
         min = 0,
         max = 1,
         value = 0,
         step = 1
-      )
+      ),
+      helpText("Used only for 'Models and prediction' with 'Amble waste water'.")
     ),
     mainPanel(
       plotOutput("distPlot")
@@ -121,11 +122,18 @@ server <- function(input, output) {
         events$SWE <- predict(model, newdata = pred_data, type = "response")
 
         plot_data <- data.frame(rain = new_rain, lag = new_lag)
+        point_data <- data.frame(
+          rainfall_warkworth = new_rain,
+          Wark_rainfall_lag1 = new_lag,
+          wwtwmin1 = new_yesterday
+        )
+        selected_prob <- predict(model, newdata = point_data, type = "response")
         myplot <- ggplot(events, aes(rain, lag, z = SWE)) +
           geom_contour_filled() +
           geom_point(data = plot_data, aes(x = rain, y = lag), inherit.aes = FALSE, color = "red", size = 4, shape = 19) +
           labs(
             title = "Predicted Amble waste water event probability",
+            subtitle = sprintf("Selected point probability: %.3f | Event yesterday: %d", selected_prob, new_yesterday),
             x = "Rainfall today (mm)",
             y = "Rainfall yesterday (mm)"
           )
@@ -158,11 +166,17 @@ server <- function(input, output) {
         events$SWE <- predict(model, newdata = pred_data, type = "response")
 
         plot_data <- data.frame(rain = new_rain, lag = new_lag)
+        point_data <- data.frame(
+          rainfall_warkworth = new_rain,
+          Wark_rainfall_lag1 = new_lag
+        )
+        selected_prob <- predict(model, newdata = point_data, type = "response")
         myplot <- ggplot(events, aes(rain, lag, z = SWE)) +
           geom_contour_filled() +
           geom_point(data = plot_data, aes(x = rain, y = lag), inherit.aes = FALSE, color = "red", size = 4, shape = 19) +
           labs(
             title = "Predicted Amble harbour event probability",
+            subtitle = sprintf("Selected point probability: %.3f | Event yesterday is not used in harbour model", selected_prob),
             x = "Rainfall today (mm)",
             y = "Rainfall yesterday (mm)"
           )
