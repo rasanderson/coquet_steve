@@ -123,7 +123,7 @@ server <- function(input, output) {
         plot_data <- data.frame(rain = new_rain, lag = new_lag)
         myplot <- ggplot(events, aes(rain, lag, z = SWE)) +
           geom_contour_filled() +
-          geom_point(data = plot_data, aes(x = rain, y = lag), color = "red", size = 4, shape = 19) +
+          geom_point(data = plot_data, aes(x = rain, y = lag), inherit.aes = FALSE, color = "red", size = 4, shape = 19) +
           labs(
             title = "Predicted Amble waste water event probability",
             x = "Rainfall today (mm)",
@@ -160,7 +160,7 @@ server <- function(input, output) {
         plot_data <- data.frame(rain = new_rain, lag = new_lag)
         myplot <- ggplot(events, aes(rain, lag, z = SWE)) +
           geom_contour_filled() +
-          geom_point(data = plot_data, aes(x = rain, y = lag), color = "red", size = 4, shape = 19) +
+          geom_point(data = plot_data, aes(x = rain, y = lag), inherit.aes = FALSE, color = "red", size = 4, shape = 19) +
           labs(
             title = "Predicted Amble harbour event probability",
             x = "Rainfall today (mm)",
