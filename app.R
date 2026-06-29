@@ -265,9 +265,24 @@ server <- function(input, output) {
       mean_rain_roth = input$bins10,
       WWTW_t1 = as.numeric(input$bins11)
     )
-    predicted_log10 <- predict(coli.glm, newdata = new_data, type = "response")
-    predicted_value <- 10^predicted_log10
-    paste("Predicted E. coli count (CFU/100ml):", round(predicted_value, 2))
+    predicted <- predict(coli.glm, newdata = new_data, type = "response", se.fit = TRUE)
+    fit_log10 <- as.numeric(predicted$fit)
+    se_log10 <- as.numeric(predicted$se.fit)
+    predicted_value <- 10^fit_log10
+    lower_bound <- 10^(fit_log10 - 1.96 * se_log10)
+    upper_bound <- 10^(fit_log10 + 1.96 * se_log10)
+
+    paste0(
+      "Inputs | flow_t0=", round(input$bins7, 2),
+      ", flow_t2=", round(input$bins8, 2),
+      ", rain_wark=", round(input$bins9, 2),
+      ", rain_roth=", round(input$bins10, 2),
+      ", WWTW_t1=", input$bins11,
+      "\nPredicted log10(E. coli): ", sprintf("%.4f", fit_log10),
+      " (SE ", sprintf("%.4f", se_log10), ")",
+      "\nPredicted E. coli count (CFU/100ml): ", sprintf("%.2f", predicted_value),
+      " (95% CI: ", sprintf("%.2f", lower_bound), " - ", sprintf("%.2f", upper_bound), ")"
+    )
   })
 
   ####### table_info<-reactive(
