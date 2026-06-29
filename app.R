@@ -39,13 +39,6 @@ ui <- fluidPage(
         selected = "Time series"
       ),
       radioButtons(
-        # drop this and see below
-        "bins2",
-        "Pick one variable to plot/model ",
-        choices = c("Rainfall", "Storm water events"),
-        selected = "Rainfall"
-      ),
-      radioButtons(
         "bins3",
         "Pick the sewage outflow to plot/model ",
         choices = c("Amble waste water", "Amble harbour"),
@@ -112,7 +105,7 @@ ui <- fluidPage(
       )
     ),
     mainPanel(
-      plotOutput("distPlot"),
+      plotOutput("distPlot", height = "700px"),
       tableOutput("coliform_prediction")
     )
   )
@@ -127,27 +120,43 @@ server <- function(input, output) {
 
   plot_info <- reactive({
     choice1 <- input$bins1
-    choice2 <- input$bins2
     choice3 <- input$bins3
     new_rain <- input$bins4
     new_lag <- input$bins5
     new_yesterday <- ifelse(input$bins6 >= 0.5, 1, 0)
 
     if (choice1 == "Time series") {
-      if (choice2 == "Rainfall") {
-        myplot <- ggplot(rain_weather.dat, aes(x = days, y = rainfall_warkworth)) +
-          geom_line(color = "blue") +
-          labs(y = "rain (mm)", title = "Rainfall")
-        return(myplot)
-      }
+      event_col <- ifelse(choice3 == "Amble harbour", "event_harbour", "event_WWTW")
 
-      if (choice2 == "Storm water events") {
-        event_col <- ifelse(choice3 == "Amble harbour", "event_harbour", "event_WWTW")
-        myplot <- ggplot(rain_weather.dat, aes(x = days, y = .data[[event_col]])) +
-          geom_line(color = "blue") +
-          labs(y = "event occurring 0/1", title = paste("Storm water events:", choice3))
-        return(myplot)
-      }
+      plot_data <- rbind(
+        data.frame(
+          days = rain_weather.dat$days,
+          value = rain_weather.dat$rainfall_warkworth,
+          series = "Rainfall",
+          y_label = "rain (mm)"
+        ),
+        data.frame(
+          days = rain_weather.dat$days,
+          value = rain_weather.dat[[event_col]],
+          series = paste("Storm water events:", choice3),
+          y_label = "event occurring 0/1"
+        )
+      )
+
+      myplot <- ggplot(plot_data, aes(x = days, y = .data$value)) +
+        geom_line(color = "blue") +
+        facet_wrap(~series, ncol = 1, scales = "free_y") +
+        labs(x = "Days", y = NULL, title = "Rainfall and storm water events") +
+        theme(
+          plot.title = element_text(size = 17, face = "bold"),
+          axis.title.x = element_text(size = 14),
+          axis.title.y = element_text(size = 14),
+          axis.text.x = element_text(size = 12),
+          axis.text.y = element_text(size = 12),
+          strip.text = element_text(size = 13, face = "bold")
+        )
+
+      return(myplot)
     }
 
     if (choice1 == "Models and prediction") {
