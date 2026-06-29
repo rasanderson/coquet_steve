@@ -105,8 +105,14 @@ ui <- fluidPage(
       )
     ),
     mainPanel(
-      plotOutput("distPlot", height = "700px"),
-      tableOutput("coliform_prediction")
+      conditionalPanel(
+        condition = "input.bins1 == 'Coliform risk Little Shore'",
+        tableOutput("coliform_prediction")
+      ),
+      conditionalPanel(
+        condition = "input.bins1 != 'Coliform risk Little Shore'",
+        plotOutput("distPlot", height = "700px")
+      )
     )
   )
 )
@@ -128,35 +134,35 @@ server <- function(input, output) {
     if (choice1 == "Time series") {
       event_col <- ifelse(choice3 == "Amble harbour", "event_harbour", "event_WWTW")
 
-      plot_data <- rbind(
-        data.frame(
-          days = rain_weather.dat$days,
-          value = rain_weather.dat$rainfall_warkworth,
-          series = "Rainfall",
-          y_label = "rain (mm)"
-        ),
-        data.frame(
-          days = rain_weather.dat$days,
-          value = rain_weather.dat[[event_col]],
-          series = paste("Storm water events:", choice3),
-          y_label = "event occurring 0/1"
-        )
-      )
-
-      myplot <- ggplot(plot_data, aes(x = days, y = .data$value)) +
+      rainfall_plot <- ggplot(rain_weather.dat, aes(x = days, y = .data$rainfall_warkworth)) +
         geom_line(color = "blue") +
-        facet_wrap(~series, ncol = 1, scales = "free_y") +
-        labs(x = "Days", y = NULL, title = "Rainfall and storm water events") +
+        labs(x = "Days", y = "mm rain / day", title = "Rainfall") +
         theme(
           plot.title = element_text(size = 17, face = "bold"),
           axis.title.x = element_text(size = 14),
           axis.title.y = element_text(size = 14),
           axis.text.x = element_text(size = 12),
-          axis.text.y = element_text(size = 12),
-          strip.text = element_text(size = 13, face = "bold")
+          axis.text.y = element_text(size = 12)
         )
 
-      return(myplot)
+      storm_plot <- ggplot(rain_weather.dat, aes(x = days, y = .data[[event_col]])) +
+        geom_line(color = "blue", linewidth = 0.6, linetype = "dotted") +
+        geom_point(color = "blue", size = 2, alpha = 0.8) +
+        scale_y_continuous(
+          limits = c(-0.05, 1.05),
+          breaks = c(0, 1),
+          labels = c("No", "Yes")
+        ) +
+        labs(x = "Days", y = "Stormwater event", title = paste("Storm water events:", choice3)) +
+        theme(
+          plot.title = element_text(size = 17, face = "bold"),
+          axis.title.x = element_text(size = 14),
+          axis.title.y = element_text(size = 14),
+          axis.text.x = element_text(size = 12),
+          axis.text.y = element_text(size = 12)
+        )
+
+      return(list(rainfall_plot = rainfall_plot, storm_plot = storm_plot))
     }
 
     if (choice1 == "Models and prediction") {
@@ -250,11 +256,7 @@ server <- function(input, output) {
     }
 
     if (choice1 == "Coliform risk Little Shore") {
-      return(
-        ggplot() +
-          theme_void() +
-          labs(title = "Coliform prediction shown below")
-      )
+      return(NULL)
     }
 
     ggplot() +
@@ -296,7 +298,21 @@ server <- function(input, output) {
 
   ####### table_info<-reactive(
   output$distPlot <- renderPlot({
-    plot_info()
+    myplot <- plot_info()
+
+    if (is.null(myplot)) {
+      return(NULL)
+    }
+
+    if (is.list(myplot) && !is.null(myplot$rainfall_plot) && !is.null(myplot$storm_plot)) {
+      grid::grid.newpage()
+      lay <- grid::grid.layout(nrow = 2, ncol = 1)
+      grid::pushViewport(grid::viewport(layout = lay))
+      print(myplot$rainfall_plot, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 1))
+      print(myplot$storm_plot, vp = grid::viewport(layout.pos.row = 2, layout.pos.col = 1))
+    } else {
+      print(myplot)
+    }
   })
 }
 
