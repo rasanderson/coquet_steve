@@ -113,7 +113,7 @@ ui <- fluidPage(
     ),
     mainPanel(
       plotOutput("distPlot"),
-      textOutput("coliform_prediction")
+      tableOutput("coliform_prediction")
     )
   )
 )
@@ -253,9 +253,9 @@ server <- function(input, output) {
       labs(title = "Please select a valid analysis option")
   })
 
-  output$coliform_prediction <- renderText({
+  output$coliform_prediction <- renderTable({
     if (input$bins1 != "Coliform risk Little Shore") {
-      return("")
+      return(NULL)
     }
 
     new_data <- data.frame(
@@ -272,16 +272,16 @@ server <- function(input, output) {
     lower_bound <- 10^(fit_log10 - 1.96 * se_log10)
     upper_bound <- 10^(fit_log10 + 1.96 * se_log10)
 
-    paste0(
-      "Inputs | flow_t0=", round(input$bins7, 2),
-      ", flow_t2=", round(input$bins8, 2),
-      ", rain_wark=", round(input$bins9, 2),
-      ", rain_roth=", round(input$bins10, 2),
-      ", WWTW_t1=", input$bins11,
-      "\nPredicted log10(E. coli): ", sprintf("%.4f", fit_log10),
-      " (SE ", sprintf("%.4f", se_log10), ")",
-      "\nPredicted E. coli count (CFU/100ml): ", sprintf("%.2f", predicted_value),
-      " (95% CI: ", sprintf("%.2f", lower_bound), " - ", sprintf("%.2f", upper_bound), ")"
+    data.frame(
+      "Flow today at Rothbury (m3/s)" = round(input$bins7, 2),
+      "Flow 2 days prior at Rothbury (m3/s)" = round(input$bins8, 2),
+      "Mean rain 7 days prior at Warkworth (mm)" = round(input$bins9, 2),
+      "Mean rain 7 days prior at Rothbury (mm)" = round(input$bins10, 2),
+      "Waste water event yesterday (0/1)" = as.numeric(input$bins11),
+      "Predicted log10(E. coli)" = round(fit_log10, 4),
+      "Predicted E. coli (CFU/100ml)" = round(predicted_value, 2),
+      "95% CI for E. coli (CFU/100ml)" = paste0(round(lower_bound, 2), " - ", round(upper_bound, 2)),
+      check.names = FALSE
     )
   })
 
